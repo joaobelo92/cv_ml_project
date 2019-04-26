@@ -9,6 +9,8 @@ This network consists of two streams: temporal and spacial.
 The temporal stream uses optical flow frames computed in advance. In the original paper the optical flow stream has a 
 temporal receptive field of 10 frames. This stream has an adapted input convolutional layer with twice as many channels
 as flow frames (because flow has a vertical and horizontal channel.)
+
+
 """
 
 
@@ -45,13 +47,24 @@ class TemporalStream(nn.Module):
         self.model_name = model_name
         print(self.features, self.classifier)
 
+
+class SpatialStream(nn.Module):
+    def __init__(self, num_classes, model, model_name):
+        super(TemporalStream, self).__init__()
+
+        if model_name is 'vgg16_bn':
+            model.classifier[6] = nn.Linear(model.classifier[3].out_features, num_classes)
+
+        self.features = model.features
+        self.classifier = model.classifier
+
     def forward(self, x):
         if self.model_name is 'vgg16_bn':
             conv13 = self.features(x)
             x = self.avgpool(x)
             x = x.view(x.size(0), -1)
             x = self.classifier(x)
-            return conv13, x
+            return x, conv13
 
 
 class TwoStreamFusion(nn.Module):
