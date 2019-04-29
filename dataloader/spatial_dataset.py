@@ -1,10 +1,9 @@
 import os
-import torch
-from torch.utils.data import Dataset, DataLoader
-from torchvision import transforms, utils
+from torch.utils.data import Dataset
 import pandas as pd
 from PIL import Image
-import random
+import numpy as np
+import torch
 
 
 def pil_loader(path):
@@ -33,19 +32,18 @@ class SpatialDataset(Dataset):
         item = self.classes.iloc[index]
         diff = item[2] // self.t
         for i in range(self.t):
-            frames.append(random.randint(i * diff, (i+1) * diff))
+            frames.append(np.random.randint(i * diff + 1, high=(i+1) * diff))
         data = self.__load_images(item[0], frames)
         return data, item[1]
 
     def __load_images(self, filename, frames):
-        data = []
-        for f in frames:
+        for i, f in enumerate(frames):
             path = os.path.join(self.root_dir, 'jpegs_256', filename,
                                 'frame{:06d}.jpg'.format(f))
             image = pil_loader(path)
             if self.transform:
                 image = self.transform(image)
-            data.append(image)
+            data = image if i is 0 else torch.cat((data, image))
         return data
 
 # dataset = SpatialDataset('/Users/joaobelo/Datasets/ucf-101/', 'trainlist01.csv')

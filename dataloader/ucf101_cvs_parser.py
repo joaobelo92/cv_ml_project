@@ -52,7 +52,7 @@ class UCF101CVSParser:
         return dataset
 
 
-splitter = UCF101CVSParser('/Users/joaobelo/Datasets/ucf-101/')
+splitter = UCF101CVSParser('/home/joao/Datasets/ucf101/')
 splitter.write_to_csv('trainlist01', splitter.train_dataset, ['file', 'label'])
 splitter.write_to_csv('vallist01', splitter.val_dataset, ['file', 'label'])
 splitter.write_to_csv('classInd', {v: k for k, v in splitter.action_labels.items()},
