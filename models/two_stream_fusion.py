@@ -48,23 +48,7 @@ class TemporalStream(nn.Module):
         print(self.features, self.classifier)
 
 
-class SpatialStream(nn.Module):
-    def __init__(self, num_classes, model, model_name):
-        super(TemporalStream, self).__init__()
 
-        if model_name is 'vgg16_bn':
-            model.classifier[6] = nn.Linear(model.classifier[3].out_features, num_classes)
-
-        self.features = model.features
-        self.classifier = model.classifier
-
-    def forward(self, x):
-        if self.model_name is 'vgg16_bn':
-            conv13 = self.features(x)
-            x = self.avgpool(x)
-            x = x.view(x.size(0), -1)
-            x = self.classifier(x)
-            return x, conv13
 
 
 class TwoStreamFusion(nn.Module):
