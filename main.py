@@ -9,8 +9,6 @@ import torch.nn as nn
 import torch.backends.cudnn as cudnn
 import torch.utils.data
 import torchvision.transforms as transforms
-import torchvision.datasets as datasets
-from torch.autograd import Variable
 import torchvision.models as torchvision_models
 
 import models

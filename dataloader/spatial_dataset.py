@@ -4,6 +4,7 @@ import pandas as pd
 from PIL import Image
 import numpy as np
 import torch
+import torchvision.transforms as transforms
 
 
 def pil_loader(path):
@@ -32,7 +33,7 @@ class SpatialDataset(Dataset):
         item = self.classes.iloc[index]
         diff = item[2] // self.t
         for i in range(self.t):
-            frames.append(np.random.randint(i * diff + 1, high=(i+1) * diff))
+            frames.append(np.random.randint(i * diff + 1, (i+1) * diff))
         data = self.__load_images(item[0], frames)
         return data, item[1]-1
 
@@ -46,7 +47,11 @@ class SpatialDataset(Dataset):
             data = image if i is 0 else torch.cat((data, image))
         return data
 
-# dataset = SpatialDataset('/Users/joaobelo/Datasets/ucf-101/', 'trainlist01.csv')
+
+# dataset = SpatialDataset('/home/joao/Datasets/ucf101/', 'trainlist01.csv', transform=transforms.ToTensor())
 # i, l = dataset.__getitem__(5)
 # for x in i:
-#     x.show(x)
+#     i = x.numpy()
+#
+#     image = Image.fromarray(i, mode='RGB')
+#     image.show()
