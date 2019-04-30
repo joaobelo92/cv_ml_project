@@ -34,7 +34,7 @@ class SpatialDataset(Dataset):
         for i in range(self.t):
             frames.append(np.random.randint(i * diff + 1, high=(i+1) * diff))
         data = self.__load_images(item[0], frames)
-        return data, item[1]
+        return data, item[1]-1
 
     def __load_images(self, filename, frames):
         for i, f in enumerate(frames):
