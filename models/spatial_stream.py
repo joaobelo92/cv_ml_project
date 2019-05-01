@@ -19,15 +19,15 @@ class SpatialStream(nn.Module):
 
     def forward(self, x):
         if self.model_name is 'vgg16_bn':
-            mean = torch.zeros(x.size(0), self.num_classes).cuda()
+            res_mean = torch.zeros(x.size(0), self.num_classes).cuda()
             for frame in range(x.size(1) // 3):
                 index = frame * 3
                 conv13 = self.features(x[:, index:index+3, :, :])
                 res = self.avgpool(conv13)
                 res = res.view(res.size(0), -1)
                 res = self.classifier(res)
-                mean += res / (x.size(1) // 3)
+                res_mean += res / (x.size(1) // 3)
                 frame_conv13 = conv13 if frame is 0 else torch.cat((frame_conv13, conv13))
 
-        return mean, frame_conv13
+        return res_mean, frame_conv13
 

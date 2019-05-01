@@ -36,10 +36,10 @@ class TemporalDataset(Dataset):
         frames = []
         item = self.classes.iloc[index]
         offset = self.time_between_frames * self.frames_temporal_flow // 2
-        assert offset * 2 + self.temporal_chunks <= item['frames']
+        assert offset * 2 + self.temporal_chunks <= item['frames'] - 1
 
         # Index difference between image we will pick to get the optical flow
-        diff = (item['frames'] - (self.time_between_frames * self.frames_temporal_flow)) // self.temporal_chunks
+        diff = (item['frames'] - 1 - (self.time_between_frames * self.frames_temporal_flow)) // self.temporal_chunks
         for i in range(self.temporal_chunks):
             # It's necessary to add 1 because images start with label 1
             frames.append(np.random.randint(offset + i * diff + 1, offset + (i + 1) * diff + 1))

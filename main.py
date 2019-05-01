@@ -13,7 +13,9 @@ import torchvision.models as torchvision_models
 
 import models
 from dataloader.spatial_dataset import SpatialDataset
+from dataloader.temporal_dataset import TemporalDataset
 from models.spatial_stream import SpatialStream
+from models.temporal_stream import TemporalStream
 
 """
 Based on:
@@ -87,9 +89,11 @@ def main_worker(args):
         print("=> creating model '{}'".format(args.arch))
         model = model_zoo.__dict__[args.arch]()
 
-    spatial_stream = SpatialStream(101, model, args.arch)
+    # spatial_stream = SpatialStream(101, model, args.arch)
+    # model = spatial_stream
 
-    model = spatial_stream
+    temporal_stream = TemporalStream(101, model, args.arch)
+    model = temporal_stream
 
     if args.gpu is not None:
         torch.cuda.set_device(args.gpu)
@@ -137,7 +141,7 @@ def main_worker(args):
         crop_size = 224
         val_size = 256
 
-    train_dataset = SpatialDataset(args.data, 'trainlist{}.csv'.format(args.data_split),
+    spatial_train_dataset = SpatialDataset(args.data, 'trainlist{}.csv'.format(args.data_split),
                                    transforms.Compose([
                                        transforms.RandomResizedCrop(crop_size),
                                        transforms.RandomHorizontalFlip(),
@@ -145,7 +149,7 @@ def main_worker(args):
                                        normalize
                                    ]))
 
-    val_dataset = SpatialDataset(args.data, 'vallist{}.csv'.format(args.data_split),
+    spatial_val_dataset = SpatialDataset(args.data, 'vallist{}.csv'.format(args.data_split),
                                  transforms.Compose([
                                      transforms.Resize(val_size),
                                      transforms.CenterCrop(crop_size),
@@ -153,24 +157,44 @@ def main_worker(args):
                                      normalize
                                  ]))
 
-    train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True,
-                                               num_workers=args.workers)
+    temporal_train_dataset = TemporalDataset(args.data, 'trainlist{}.csv'.format(args.data_split),
+                                   transforms.Compose([
+                                       transforms.CenterCrop(crop_size),
+                                       transforms.ToTensor()
+                                   ]))
 
-    val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False,
-                                             num_workers=args.workers)
+    temporal_val_dataset = TemporalDataset(args.data, 'vallist{}.csv'.format(args.data_split),
+                                 transforms.Compose([
+                                       transforms.CenterCrop(crop_size),
+                                       transforms.ToTensor()
+                                 ]))
+
+    spatial_train_loader = torch.utils.data.DataLoader(spatial_train_dataset, batch_size=args.batch_size,
+                                                       shuffle=True, num_workers=args.workers)
+
+    spatial_val_loader = torch.utils.data.DataLoader(spatial_val_dataset, batch_size=args.batch_size,
+                                                     shuffle=False, num_workers=args.workers)
+
+    temporal_train_loader = torch.utils.data.DataLoader(temporal_train_dataset, batch_size=args.batch_size,
+                                                        shuffle=True, num_workers=args.workers)
+
+    temporal_val_loader = torch.utils.data.DataLoader(temporal_val_dataset, batch_size=args.batch_size,
+                                                      shuffle=False, num_workers=args.workers)
 
     if args.evaluate:
-        validate(val_loader, model, criterion, args)
+        validate(spatial_val_loader, model, criterion, args)
         return
 
     for epoch in range(args.start_epoch, args.epochs):
         adjust_learning_rate(optimizer, epoch, args)
 
         # train for one epoch
-        train(train_loader, model, criterion, optimizer, epoch, args)
+        # train(spatial_train_loader, model, criterion, optimizer, epoch, args)
+        train(temporal_train_loader, model, criterion, optimizer, epoch, args)
 
         # evaluate on validation set
-        acc1 = validate(val_loader, model, criterion, args)
+        acc1 = validate(temporal_val_loader, model, criterion, args)
+
 
         # remember best acc@1 and save checkpoint
         is_best = acc1 > best_acc1
@@ -207,7 +231,8 @@ def train(train_loader, model, criterion, optimizer, epoch, args):
         target = target.cuda(args.gpu)
 
         # compute output
-        output, _ = model(input)
+        # output, _ = model(input)
+        output = model(input)
         loss = criterion(output, target)
 
         # measure accuracy and record loss
@@ -247,7 +272,8 @@ def validate(val_loader, model, criterion, args):
             target = target.cuda(args.gpu, non_blocking=True)
 
             # compute output
-            output, _ = model(input)
+            # output, _ = model(input)
+            output = model(input)
             loss = criterion(output, target)
 
             # measure accuracy and record loss
