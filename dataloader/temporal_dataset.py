@@ -26,6 +26,9 @@ class TemporalDataset(Dataset):
         self.time_between_frames = time_between_frames
         self.frames_temporal_flow = frames_temporal_flow
 
+        pil_loader(os.path.join(self.root_dir, 'tvl1_flow', 'u', 'v_ApplyEyeMakeup_g07_c02',
+                                                  'frame{:06d}.jpg'.format(20))).show()
+
     def __len__(self):
         return len(self.classes)
 
@@ -45,27 +48,33 @@ class TemporalDataset(Dataset):
 
     def __load_optical_images(self, filename, frames):
         offset = self.frames_temporal_flow // 2
-        # data = torch.
-        for f in frames:
+        for idx1, f in enumerate(frames):
             r = list(range(f - offset * self.time_between_frames, f, self.time_between_frames))
             r += list(range(f + 1, f + offset * self.time_between_frames + 1, self.time_between_frames))
-            for image_number in r:
+            for idx2, image_number in enumerate(r):
                 print(f, image_number)
-                image = pil_loader(os.path.join(self.root_dir, 'tvl1_flow', 'u', filename,
-                                                'frame{:06d}.jpg'.format(image_number)))
+                image_u = pil_loader(os.path.join(self.root_dir, 'tvl1_flow', 'u', filename,
+                                                  'frame{:06d}.jpg'.format(image_number)))
+                image_v = pil_loader(os.path.join(self.root_dir, 'tvl1_flow', 'v', filename,
+                                                  'frame{:06d}.jpg'.format(image_number)))
                 if self.transform:
-                    image = self.transform(image)
-                data = image if i is 0 else torch.cat((data, image))
-                print(data.size())
+                    image_u = self.transform(image_u)
+
+                    image_v = self.transform(image_v)
+                data = image_u if idx1 is 0 and idx2 is 0 else torch.cat((data, image_u))
+                data = torch.cat((data, image_v))
         return data
 
 
 dataset = TemporalDataset('/home/joao/Datasets/ucf101/', 'trainlist01.csv', transform=transforms.ToTensor())
 i, l = dataset.__getitem__(5)
 print(i.size())
-for x in i[0:10]:
-    i = x.numpy()
+for x in i[0:4]:
+    print(i)
+    i = x.numpy().T
 
     image = Image.fromarray(i, mode='L')
     image.show()
+
+
 
