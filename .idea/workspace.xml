@@ -317,10 +317,10 @@
     </configuration>
     <list>
       <item itemvalue="Python.main" />
-      <item itemvalue="Python.ucf101_cvs_parser" />
+      <item itemvalue="Python.spatial_dataset" />
       <item itemvalue="Python.spatial_stream" />
       <item itemvalue="Python.temporal_dataset" />
-      <item itemvalue="Python.spatial_dataset" />
+      <item itemvalue="Python.ucf101_cvs_parser" />
     </list>
     <recent_temporary>
       <list>
