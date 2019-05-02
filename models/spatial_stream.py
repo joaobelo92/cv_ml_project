@@ -3,10 +3,10 @@ import torch.nn as nn
 
 
 class SpatialStream(nn.Module):
-    def __init__(self, num_classes, model, model_name):
+    def __init__(self, model, model_name, num_classes=None):
         super(SpatialStream, self).__init__()
 
-        if model_name is 'vgg16_bn':
+        if model_name is 'vgg16_bn' and num_classes:
             model.classifier[6] = nn.Linear(model.classifier[3].out_features, num_classes)
 
         self.features = model.features
@@ -14,8 +14,6 @@ class SpatialStream(nn.Module):
         self.avgpool = model.avgpool
         self.model_name = model_name
         self.num_classes = num_classes
-
-        print(model)
 
     def forward(self, x):
         if self.model_name is 'vgg16_bn':

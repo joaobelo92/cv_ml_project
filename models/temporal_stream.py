@@ -3,7 +3,7 @@ import torch.nn as nn
 
 
 class TemporalStream(nn.Module):
-    def __init__(self, num_classes, model, model_name, frames_temporal_flow=10):
+    def __init__(self, model, model_name, frames_temporal_flow=10, num_classes=None):
         super(TemporalStream, self).__init__()
 
         # Currently tested for VGG. Other networks require adaptations
@@ -17,7 +17,8 @@ class TemporalStream(nn.Module):
             padding = model.features[0].padding
             model.features[0] = nn.Conv2d(frames_temporal_flow * 2, out_channels, kernel_size=kernel_size,
                                           stride=stride, padding=padding)
-            model.classifier[6] = nn.Linear(model.classifier[3].out_features, num_classes)
+            if num_classes:
+                model.classifier[6] = nn.Linear(model.classifier[3].out_features, num_classes)
 
             self.features = model.features
             self.avgpool = model.avgpool
@@ -26,7 +27,6 @@ class TemporalStream(nn.Module):
         self.model_name = model_name
         self.num_classes = num_classes
         self.frames_temporal_flow = frames_temporal_flow
-        print(self.features, self.classifier)
 
     def forward(self, x):
         if self.model_name is 'vgg16_bn':
