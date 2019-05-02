@@ -3,14 +3,15 @@ import torch.nn as nn
 
 import torchvision.models as torchvision_models
 
+from models.spatial_stream import SpatialStream
+from models.temporal_stream import TemporalStream
+
 """
 Implementation of the Convolutional Two-Stream Network Fusion used for Video Action Recognition, by Feichtenhofer et al.
 This network consists of two streams: temporal and spacial.
 The temporal stream uses optical flow frames computed in advance. In the original paper the optical flow stream has a 
 temporal receptive field of 10 frames. This stream has an adapted input convolutional layer with twice as many channels
 as flow frames (because flow has a vertical and horizontal channel.)
-
-
 """
 
 
@@ -32,7 +33,7 @@ class ConvFusionUnit(nn.Module):
 
 class TwoStreamFusion(nn.Module):
 
-    def __init__(self, num_classes=101, model='vgg16_bn', flow_frames=10):
+    def __init__(self, num_classes, model, model_name, frames_temporal_flow=10):
         super(TwoStreamFusion, self).__init__()
 
         available_models = ['vgg16_bn']
@@ -46,7 +47,8 @@ class TwoStreamFusion(nn.Module):
             model_scatial = model_zoo.__dict__[model](pretrained=True)
             model_temporal = model_zoo.__dict__[model](pretrained=True)
 
-        temporal_stream = TemporalStream(num_classes, flow_frames, model_temporal, model)
+        temporal_stream = TemporalStream(num_classes, model, model_name, frames_temporal_flow=10)
+        spatial_stream = SpatialStream()
 
 
 

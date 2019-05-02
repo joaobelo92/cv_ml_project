@@ -4,7 +4,6 @@ import pandas as pd
 from PIL import Image
 import numpy as np
 import torch
-import torchvision.transforms as transforms
 
 
 def pil_loader(path):
