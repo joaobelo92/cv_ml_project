@@ -12,11 +12,10 @@ import torchvision.transforms as transforms
 import torchvision.models as torchvision_models
 
 import models
-from dataloader.spatial_dataset import SpatialDataset
-from dataloader.temporal_dataset import TemporalDataset
 from dataloader.spatio_temporal_dataset import SpatioTemporalDataset
 from models.spatial_stream import SpatialStream
 from models.temporal_stream import TemporalStream
+from models.two_stream_fusion import TwoStreamFusion
 
 """
 Based on:
@@ -30,6 +29,13 @@ def get_model_names(models):
 
 
 model_names = sorted(get_model_names(models) + get_model_names(torchvision_models))
+import torch
+import torch.nn as nn
+import torch.backends.cudnn as cudnn
+import torch.utils.data
+import torchvision.transforms as transforms
+import torchvision.models as torchvision_models
+
 train_modes = ['spatio_temporal', 'spatial', 'temporal']
 
 parser = argparse.ArgumentParser(description='UCF101 Training')
@@ -99,7 +105,9 @@ def main_worker(args):
     elif args.mode == 'temporal':
         temporal_stream = TemporalStream(model, args.arch, num_classes=101)
         model = temporal_stream
-    # TODO: spatiotemporal
+    elif args.mode == 'spatio_temporal':
+        two_stream_fusion = TwoStreamFusion(101, model, args.arch)
+        model = two_stream_fusion
 
     if args.gpu is not None:
         torch.cuda.set_device(args.gpu)
@@ -216,6 +224,8 @@ def train(train_loader, model, criterion, optimizer, epoch, args):
             output, _ = model(spatial)
         elif args.mode == 'temporal':
             output, _ = model(temporal)
+        elif args.mode == 'spatio_temporal':
+            output = model(spatial, temporal)
 
         loss = criterion(output, target)
 
@@ -262,6 +272,9 @@ def validate(val_loader, model, criterion, args):
                 output, _ = model(spatial)
             elif args.mode == 'temporal':
                 output, _ = model(temporal)
+            elif args.mode == 'spatio_temporal':
+                output = model(spatial, temporal)
+
             loss = criterion(output, target)
 
             # measure accuracy and record loss
