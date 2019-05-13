@@ -6,7 +6,7 @@ class SpatialStream(nn.Module):
     def __init__(self, model, model_name, num_classes=None):
         super(SpatialStream, self).__init__()
 
-        if model_name is 'vgg16_bn' and num_classes:
+        if model_name == 'vgg16_bn' and num_classes:
             model.classifier[6] = nn.Linear(model.classifier[3].out_features, num_classes)
 
         self.features = model.features
@@ -16,7 +16,7 @@ class SpatialStream(nn.Module):
         self.num_classes = num_classes
 
     def forward(self, x):
-        if self.model_name is 'vgg16_bn':
+        if self.model_name == 'vgg16_bn':
             res_mean = torch.zeros(x.size(0), self.num_classes).cuda()
             for frame in range(x.size(1) // 3):
                 index = frame * 3

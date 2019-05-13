@@ -25,12 +25,6 @@ class ConvFusionUnit(nn.Module):
         self.stacked_features = torch.cat(spatial_channels, temporal_channels)
 
 
-
-
-
-
-
-
 class TwoStreamFusion(nn.Module):
 
     def __init__(self, num_classes, model, model_name, frames_temporal_flow=10):

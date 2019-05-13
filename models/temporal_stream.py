@@ -10,7 +10,7 @@ class TemporalStream(nn.Module):
         # TODO: keep trained values for the first layer
         # print(model.state_dict()['features.0.weight'])
         # print(model.state_dict()['features.0.bias'])
-        if model_name is 'vgg16_bn':
+        if model_name == 'vgg16_bn':
             out_channels = model.features[0].out_channels
             kernel_size = model.features[0].kernel_size
             stride = model.features[0].stride
@@ -29,13 +29,14 @@ class TemporalStream(nn.Module):
         self.frames_temporal_flow = frames_temporal_flow
 
     def forward(self, x):
-        if self.model_name is 'vgg16_bn':
+        if self.model_name == 'vgg16_bn':
             res_mean = torch.zeros(x.size(0), self.num_classes).cuda()
             batch_size = x.size(1) // (self.frames_temporal_flow * 2)
             # print(x.size(1), self.frames_temporal_flow * 2, batch_size)
             for frame in range(batch_size):
                 index = frame * self.frames_temporal_flow * 2
-                res = self.features(x[:, index:index + self.frames_temporal_flow * 2, :, :])
+                curr_input = x[:, index:index + self.frames_temporal_flow * 2, :, :]
+                res = self.features(curr_input)
                 # Perform fusion at this point
                 res = self.avgpool(res)
                 res = res.view(res.size(0), -1)
