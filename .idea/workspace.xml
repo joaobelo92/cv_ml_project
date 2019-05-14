@@ -5,9 +5,10 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="bdf1f010-3e49-4dab-8987-312d378116ca" name="Default Changelist" comment="">
+      <change afterPath="$PROJECT_DIR$/models/shufflenet_v2.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/models/two_stream_fusion.py" beforeDir="false" afterPath="$PROJECT_DIR$/models/two_stream_fusion.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models/temporal_stream.py" beforeDir="false" afterPath="$PROJECT_DIR$/models/temporal_stream.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -19,11 +20,11 @@
     <splitter split-orientation="horizontal" split-proportion="0.5350206">
       <split-first>
         <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-          <file pinned="false" current-in-tab="true">
+          <file pinned="false" current-in-tab="false">
             <entry file="file://$PROJECT_DIR$/main.py">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="476">
-                  <caret line="275" column="23" selection-start-line="275" selection-start-column="23" selection-end-line="275" selection-end-column="23" />
+                <state relative-caret-position="1758">
+                  <caret line="349" column="29" lean-forward="true" selection-start-line="349" selection-start-column="29" selection-end-line="349" selection-end-column="29" />
                   <folding>
                     <element signature="e#0#15#0" expanded="true" />
                   </folding>
@@ -35,7 +36,7 @@
             <entry file="file://$USER_HOME$/.pyenv/versions/3.7.2/lib/python3.7/site-packages/torch/nn/modules/conv.py">
               <provider selected="true" editor-type-id="text-editor">
                 <state relative-caret-position="-324">
-                  <caret line="446" column="29" lean-forward="true" selection-start-line="446" selection-start-column="29" selection-end-line="446" selection-end-column="29" />
+                  <caret line="446" column="29" selection-start-line="446" selection-start-column="29" selection-end-line="446" selection-end-column="29" />
                 </state>
               </provider>
             </entry>
@@ -52,6 +53,15 @@
               </provider>
             </entry>
           </file>
+          <file pinned="false" current-in-tab="true">
+            <entry file="file://$PROJECT_DIR$/models/shufflenet_v2.py">
+              <provider selected="true" editor-type-id="text-editor">
+                <state relative-caret-position="495">
+                  <caret line="34" column="22" lean-forward="true" selection-start-line="34" selection-start-column="22" selection-end-line="34" selection-end-column="22" />
+                </state>
+              </provider>
+            </entry>
+          </file>
         </leaf>
       </split-first>
       <split-second>
@@ -60,7 +70,7 @@
             <entry file="file://$PROJECT_DIR$/dataloader/spatio_temporal_dataset.py">
               <provider selected="true" editor-type-id="text-editor">
                 <state relative-caret-position="1275">
-                  <caret line="85" lean-forward="true" selection-start-line="85" selection-end-line="85" />
+                  <caret line="85" selection-start-line="85" selection-end-line="85" />
                   <folding>
                     <element signature="e#0#9#0" expanded="true" />
                   </folding>
@@ -68,11 +78,11 @@
               </provider>
             </entry>
           </file>
-          <file pinned="false" current-in-tab="true">
+          <file pinned="false" current-in-tab="false">
             <entry file="file://$PROJECT_DIR$/models/two_stream_fusion.py">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="735">
-                  <caret line="91" column="12" lean-forward="true" selection-start-line="91" selection-start-column="12" selection-end-line="91" selection-end-column="45" />
+                <state relative-caret-position="214">
+                  <caret line="47" column="38" selection-start-line="47" selection-start-column="38" selection-end-line="47" selection-end-column="38" />
                   <folding>
                     <element signature="e#0#12#0" expanded="true" />
                   </folding>
@@ -101,11 +111,11 @@
               </provider>
             </entry>
           </file>
-          <file pinned="false" current-in-tab="false">
+          <file pinned="false" current-in-tab="true">
             <entry file="file://$PROJECT_DIR$/models/temporal_stream.py">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="480">
-                  <caret line="33" column="34" selection-start-line="33" selection-start-column="34" selection-end-line="33" selection-end-column="35" />
+                <state relative-caret-position="45">
+                  <caret line="4" column="32" lean-forward="true" selection-start-line="4" selection-start-column="32" selection-end-line="4" selection-end-column="32" />
                 </state>
               </provider>
             </entry>
@@ -113,8 +123,8 @@
           <file pinned="false" current-in-tab="false">
             <entry file="file://$PROJECT_DIR$/models/spatial_stream.py">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="270">
-                  <caret line="18" column="41" lean-forward="true" selection-start-line="18" selection-start-column="41" selection-end-line="18" selection-end-column="41" />
+                <state relative-caret-position="105">
+                  <caret line="7" lean-forward="true" selection-start-line="7" selection-end-line="7" />
                   <folding>
                     <element signature="e#0#12#0" expanded="true" />
                   </folding>
@@ -160,6 +170,7 @@
   <component name="FindInProjectRecents">
     <findStrings>
       <find>dist_</find>
+      <find>cudnn</find>
     </findStrings>
     <replaceStrings>
       <replace />
@@ -177,9 +188,9 @@
         <option value="$PROJECT_DIR$/dataloader/temporal_dataset.py" />
         <option value="$PROJECT_DIR$/dataloader/spatio_temporal_dataset.py" />
         <option value="$PROJECT_DIR$/models/spatial_stream.py" />
-        <option value="$PROJECT_DIR$/models/temporal_stream.py" />
         <option value="$PROJECT_DIR$/models/two_stream_fusion.py" />
         <option value="$PROJECT_DIR$/main.py" />
+        <option value="$PROJECT_DIR$/models/temporal_stream.py" />
       </list>
     </option>
   </component>
@@ -220,13 +231,14 @@
   <component name="PropertiesComponent">
     <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
     <property name="WebServerToolWindowFactoryState" value="false" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/models" />
     <property name="nodejs_interpreter_path.stuck_in_default_project" value="undefined stuck path" />
     <property name="nodejs_npm_path_reset_for_default_project" value="true" />
     <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
   </component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/models" />
       <recent name="$PROJECT_DIR$" />
     </key>
   </component>
@@ -424,7 +436,21 @@
       <option name="project" value="LOCAL" />
       <updated>1557739613623</updated>
     </task>
-    <option name="localTasksCounter" value="7" />
+    <task id="LOCAL-00007" summary="Two-Stream Fusion implemented">
+      <created>1557771354493</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1557771354493</updated>
+    </task>
+    <task id="LOCAL-00008" summary="Support for distributed training and mixed precision added">
+      <created>1557823222354</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1557823222354</updated>
+    </task>
+    <option name="localTasksCounter" value="9" />
     <servers />
   </component>
   <component name="TimeTrackingManager">
@@ -456,7 +482,7 @@
       <window_info anchor="bottom" id="Docker" order="7" show_stripe_button="false" />
       <window_info anchor="bottom" id="Version Control" order="8" />
       <window_info anchor="bottom" id="Database Changes" order="9" />
-      <window_info anchor="bottom" id="Event Log" order="10" side_tool="true" />
+      <window_info anchor="bottom" id="Event Log" order="10" side_tool="true" weight="0.32972974" />
       <window_info anchor="bottom" id="Terminal" order="11" weight="0.32972974" />
       <window_info anchor="bottom" id="Python Console" order="12" weight="0.3299539" />
       <window_info anchor="right" id="Commander" internal_type="SLIDING" order="0" type="SLIDING" weight="0.4" />
@@ -500,7 +526,9 @@
     <MESSAGE value="SpatioTemporal dataset with transformations implemented." />
     <MESSAGE value="Some updates on the Two-stream fusion" />
     <MESSAGE value="Training script now using the Spatio_temporal dataloader.&#10;Now possible to change the training stream." />
-    <option name="LAST_COMMIT_MESSAGE" value="Training script now using the Spatio_temporal dataloader.&#10;Now possible to change the training stream." />
+    <MESSAGE value="Two-Stream Fusion implemented" />
+    <MESSAGE value="Support for distributed training and mixed precision added" />
+    <option name="LAST_COMMIT_MESSAGE" value="Support for distributed training and mixed precision added" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/cv_ml_project$temporal_dataset.coverage" NAME="temporal_dataset Coverage Results" MODIFIED="1556702020114" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/dataloader" />
@@ -613,34 +641,7 @@
     <entry file="file://$PROJECT_DIR$/dataloader/spatio_temporal_dataset.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="1275">
-          <caret line="85" lean-forward="true" selection-start-line="85" selection-end-line="85" />
-          <folding>
-            <element signature="e#0#9#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/models/temporal_stream.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="480">
-          <caret line="33" column="34" selection-start-line="33" selection-start-column="34" selection-end-line="33" selection-end-column="35" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/models/spatial_stream.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="270">
-          <caret line="18" column="41" lean-forward="true" selection-start-line="18" selection-start-column="41" selection-end-line="18" selection-end-column="41" />
-          <folding>
-            <element signature="e#0#12#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/dataloader/spatial_dataset.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="33">
-          <caret line="7" selection-start-line="7" selection-end-line="7" />
+          <caret line="85" selection-start-line="85" selection-end-line="85" />
           <folding>
             <element signature="e#0#9#0" expanded="true" />
           </folding>
@@ -657,27 +658,61 @@
     <entry file="file://$USER_HOME$/.pyenv/versions/3.7.2/lib/python3.7/site-packages/torch/nn/modules/conv.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="-324">
-          <caret line="446" column="29" lean-forward="true" selection-start-line="446" selection-start-column="29" selection-end-line="446" selection-end-column="29" />
+          <caret line="446" column="29" selection-start-line="446" selection-start-column="29" selection-end-line="446" selection-end-column="29" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/models/two_stream_fusion.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="735">
-          <caret line="91" column="12" lean-forward="true" selection-start-line="91" selection-start-column="12" selection-end-line="91" selection-end-column="45" />
+        <state relative-caret-position="214">
+          <caret line="47" column="38" selection-start-line="47" selection-start-column="38" selection-end-line="47" selection-end-column="38" />
           <folding>
             <element signature="e#0#12#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/dataloader/spatial_dataset.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="33">
+          <caret line="7" selection-start-line="7" selection-end-line="7" />
+          <folding>
+            <element signature="e#0#9#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/main.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="476">
-          <caret line="275" column="23" selection-start-line="275" selection-start-column="23" selection-end-line="275" selection-end-column="23" />
+        <state relative-caret-position="1758">
+          <caret line="349" column="29" lean-forward="true" selection-start-line="349" selection-start-column="29" selection-end-line="349" selection-end-column="29" />
           <folding>
             <element signature="e#0#15#0" expanded="true" />
           </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/models/spatial_stream.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="105">
+          <caret line="7" lean-forward="true" selection-start-line="7" selection-end-line="7" />
+          <folding>
+            <element signature="e#0#12#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/models/temporal_stream.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="45">
+          <caret line="4" column="32" lean-forward="true" selection-start-line="4" selection-start-column="32" selection-end-line="4" selection-end-column="32" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/models/shufflenet_v2.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="495">
+          <caret line="34" column="22" lean-forward="true" selection-start-line="34" selection-start-column="22" selection-end-line="34" selection-end-column="22" />
         </state>
       </provider>
     </entry>

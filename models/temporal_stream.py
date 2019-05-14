@@ -7,9 +7,6 @@ class TemporalStream(nn.Module):
         super(TemporalStream, self).__init__()
 
         # Currently tested for VGG. Other networks require adaptations
-        # TODO: keep trained values for the first layer
-        # print(model.state_dict()['features.0.weight'])
-        # print(model.state_dict()['features.0.bias'])
         if model_name == 'vgg16_bn':
             out_channels = model.features[0].out_channels
             kernel_size = model.features[0].kernel_size

@@ -267,7 +267,7 @@ def train(train_loader, model, criterion, optimizer, epoch, args):
         if args.mode == 'spatial':
             output, _ = model(spatial)
         elif args.mode == 'temporal':
-            output, _ = model(temporal)
+            output = model(temporal)
         else:
             output = model(spatial, temporal)
 
@@ -325,7 +325,7 @@ def validate(val_loader, model, criterion, args):
             if args.mode == 'spatial':
                 output, _ = model(spatial)
             elif args.mode == 'temporal':
-                output, _ = model(temporal)
+                output = model(temporal)
             else:
                 output = model(spatial, temporal)
 
