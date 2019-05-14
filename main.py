@@ -25,11 +25,12 @@ try:
     from apex import amp, optimizers
     from apex.multi_tensor_apply import multi_tensor_applier
 except ImportError:
-    raise ImportError("Please install apex from https://www.github.com/nvidia/apex to run this example.")
+    raise ImportError("Please install apex from https://www.github.com/nvidia/apex to run this code.")
 
 """
 Based on:
 https://github.com/pytorch/examples/blob/master/imagenet/main.py
+and
 https://github.com/NVIDIA/apex/blob/master/examples/imagenet/main_amp.py
 """
 
@@ -73,8 +74,6 @@ parser.add_argument('-e', '--evaluate', action='store_true',
                     help='evaluate model on validation set')
 parser.add_argument('--pretrained', dest='pretrained', action='store_true',
                     help='use pre-trained model', default=True)
-parser.add_argument('--gpu', default=None, type=int,
-                    help='GPU id to use.')
 parser.add_argument('--mode', default='spatio_temporal', type=str,
                     help='Train two-stream network fusion or only one stream.')
 
@@ -86,16 +85,12 @@ parser.add_argument('--loss-scale', type=str, default=None)
 
 best_acc1 = 0
 
-
 def main():
     args = parser.parse_args()
 
     # benchmark mode will look for the optimal set of algorithms for a particular configuration
     # it might lead to faster runtime unless the input size changes at each iteration
     cudnn.benchmark = True
-
-    if args.gpu is not None:
-        warnings.warn('You have chosen a specific GPU. This will completely disable data parallelism')
 
     if args.local_rank == 0:
         print('\nCUDNN VERSION: {}\n'.format(torch.backends.cudnn.version()))
@@ -149,17 +144,6 @@ def main_worker(args):
     # Scale learning rate based on global batch size
     args.lr = args.lr * float(args.batch_size * args.world_size) / 256.
 
-    # if args.gpu is not None:
-    #     torch.cuda.set_device(args.gpu)
-    #     model = model.cuda(args.gpu)
-    # else:
-    #     # DataParallel will divide and allocate batch_size to all available GPUs
-    #     if args.arch.startswith('alexnet') or args.arch.startswith('vgg'):
-    #         model.features = torch.nn.DataParallel(model.features)
-    #         model.cuda()
-    #     else:
-    #         model = torch.nn.DataParallel(model).cuda()
-
     optimizer = torch.optim.SGD(model.parameters(), args.lr,
                                 momentum=args.momentum,
                                 weight_decay=args.weight_decay)
@@ -183,9 +167,9 @@ def main_worker(args):
         def resume():
             if os.path.isfile(args.resume):
                 print("=> loading checkpoint '{}'".format(args.resume))
-                checkpoint = torch.load(args.resume, map_location = lambda storage, loc: storage.cuda(args.gpu))
+                checkpoint = torch.load(args.resume, map_location=lambda storage, loc: storage.cuda(args.gpu))
                 args.start_epoch = checkpoint['epoch']
-                best_prec1 = checkpoint['best_prec1']
+                best_acc1 = checkpoint['best_acc1']
                 model.load_state_dict(checkpoint['state_dict'])
                 optimizer.load_state_dict(checkpoint['optimizer'])
                 print("=> loaded checkpoint '{}' (epoch {})"
@@ -217,6 +201,11 @@ def main_worker(args):
         validate(val_loader, model, criterion, args)
         return
 
+    # if args.benchmark:
+    #
+    #     validate(val_loader, model, criterion, args)
+    #     return
+
     for epoch in range(args.start_epoch, args.epochs):
         if args.distributed:
             train_sampler.set_epoch(epoch)
@@ -238,7 +227,7 @@ def main_worker(args):
             'state_dict': model.state_dict(),
             'best_acc1': best_acc1,
             'optimizer': optimizer.state_dict()
-        }, is_best)
+        }, is_best, args.arch)
 
 
 def train(train_loader, model, criterion, optimizer, epoch, args):
@@ -268,7 +257,7 @@ def train(train_loader, model, criterion, optimizer, epoch, args):
 
         # compute output
         if args.mode == 'spatial':
-            output, _ = model(spatial)
+            output = model(spatial)
         elif args.mode == 'temporal':
             output = model(temporal)
         else:
@@ -326,7 +315,7 @@ def validate(val_loader, model, criterion, args):
 
             # compute output
             if args.mode == 'spatial':
-                output, _ = model(spatial)
+                output = model(spatial)
             elif args.mode == 'temporal':
                 output = model(temporal)
             else:

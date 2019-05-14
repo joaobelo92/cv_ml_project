@@ -31,31 +31,21 @@ class TwoStreamFusion(nn.Module):
     def __init__(self, num_classes, model, model_name, frames_temporal_flow=10):
         super(TwoStreamFusion, self).__init__()
 
-        # available_models = ['vgg16_bn']
-        model_zoo = torchvision_models.vgg16_bn()
-        # if model not in available_models:
-        #     print("=> Model not found or supported. Using the baseline model VGG16 with BN")
-        #     model = 'vgg16_bn'
-        #     model_spatial = torchvision_models.vgg16_bn(pretrained=True)
-        #     model_temporal = (spatial[:, spatiatorchvision_models.vgg16_bn(pretrained=True)
-        # else:
-        #     model_scatial = model_zoo.__dict__[model](pretrained=True)
-        #     model_temporal = model_zoo.__dict__[model](pretrained=True)
-
         spatial_model = copy.deepcopy(model)
 
-        # TODO: add possibility to use pretrained weigths
         self.temporal_stream = TemporalStream(model, model_name, frames_temporal_flow=10)
-        self.spatial_stream = SpatialStream(spatial_model, model_name)
+        self.spatial_stream = SpatialStream(spatial_model, model_name, num_classes=101)
         self.conv_fusion = nn.Sequential(
-            nn.Conv3d(1024, 512, kernel_size=1, stride=1, bias=True),
+            nn.Conv3d(1024, 512, 1, stride=1, bias=True),
+            nn.BatchNorm2d(512),
             nn.ReLU(True),
             nn.MaxPool3d(2, stride=2)
         )
-        self.avgpool = model.avgpool
 
-        self.fusion_classifier = model.classifier
-        self.fusion_classifier[6] = nn.Linear(model.classifier[3].out_features, num_classes)
+        self.fusion_classifier = nn.Sequential(
+            nn.Linear(4608, 2048), nn.ReLU(), nn.Dropout(p=0.85),
+            nn.Linear(2048, 512), nn.ReLU(), nn.Dropout(p=0.85),
+            nn.Linear(512, num_classes))
 
         self.num_classes = num_classes
         self.frames_temporal_flow = frames_temporal_flow
@@ -85,11 +75,7 @@ class TwoStreamFusion(nn.Module):
             r = r.view(r.size(0), 1024, 1, 7, 7)
 
             res = self.conv_fusion(r)
-
-            res = res.view(r.size(0), 512, 7, 7)
-
             spatial_res = self.spatial_stream.avgpool(spatial_conv13)
-            res = self.avgpool(res)
 
             spatial_res = spatial_res.view(res.size(0), -1)
             res = res.view(res.size(0), -1)
@@ -100,7 +86,6 @@ class TwoStreamFusion(nn.Module):
             res_mean += (res + spatial_res) / temporal_chunks
 
         return res_mean
-
 
     def get_model_names(self, models):
         return [name for name in models.__dict__ if name.islower() and not name.startswith('__')
