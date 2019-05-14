@@ -358,10 +358,11 @@ def validate(val_loader, model, criterion, args):
     return top1.avg
 
 
-def save_checkpoint(state, is_best, filename='checkpoint.pth.tar'):
+def save_checkpoint(state, is_best, arch):
+    filename = 'checkpoint_{}.pth.tar'.format(arch)
     torch.save(state, filename)
     if is_best:
-        shutil.copyfile(filename, 'model_best.pth.tar')
+        shutil.copyfile(filename, 'model_best_{}.pth.tar'.format(arch))
 
 
 class AverageMeter(object):
@@ -438,7 +439,7 @@ def accuracy(output, target, topk=(1,)):
 
 def reduce_tensor(tensor, args):
     rt = tensor.clone()
-    dist.all_reduce(rt, op=dist.reduce_op.SUM)
+    dist.all_reduce(rt, op=dist.ReduceOp.SUM)
     rt /= args.world_size
     return rt
 
