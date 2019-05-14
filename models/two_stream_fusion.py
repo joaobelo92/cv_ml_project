@@ -31,18 +31,19 @@ class TwoStreamFusion(nn.Module):
     def __init__(self, num_classes, model, model_name, frames_temporal_flow=10):
         super(TwoStreamFusion, self).__init__()
 
+        temporal_model = copy.deepcopy(model)
         spatial_model = copy.deepcopy(model)
 
-        self.temporal_stream = TemporalStream(model, model_name, frames_temporal_flow=10)
+        self.temporal_stream = TemporalStream(temporal_model, model_name, frames_temporal_flow=10)
         self.spatial_stream = SpatialStream(spatial_model, model_name, num_classes=101)
-        self.conv_fusion = nn.Sequential(
-            nn.Conv3d(1024, 512, 1, stride=1, bias=True),
-            nn.ReLU(True),
-            nn.MaxPool3d(2, stride=2)
-        )
+        # self.conv_fusion = nn.Sequential(
+        #     nn.Conv3d(1024, 512, 1, stride=1, bias=True),
+        #     nn.ReLU(True),
+        #     nn.MaxPool3d(2, stride=2)
+        # )
 
         self.fusion_classifier = nn.Sequential(
-            nn.Linear(4608, 2048), nn.ReLU(), nn.Dropout(p=0.85),
+            nn.Linear(25088, 2048), nn.ReLU(), nn.Dropout(p=0.85),
             nn.Linear(2048, 512), nn.ReLU(), nn.Dropout(p=0.85),
             nn.Linear(512, num_classes))
 
@@ -66,18 +67,19 @@ class TwoStreamFusion(nn.Module):
             temporal_conv13 = self.temporal_stream.features(temp_input)
 
             # perform spatial fusion of temporal and spatial features
-            r = torch.cat((spatial_conv13, temporal_conv13), dim=1)
+            # r = torch.cat((spatial_conv13, temporal_conv13), dim=1)
             for i in range(spatial_conv13.size(1)):
-                r[:, 2 * i, :, :] = spatial_conv13[:, i, :, :]
-                r[:, 2 * i + 1, :, :] = temporal_conv13[:, i, :, :]
+                spatial_conv13[:, i, :, :] = spatial_conv13[:, i, :, :] + temporal_conv13[:, i, :, :]
+                # r[:, 2 * i, :, :] = spatial_conv13[:, i, :, :]
+                # r[:, 2 * i + 1, :, :] = temporal_conv13[:, i, :, :]
 
-            r = r.view(r.size(0), 1024, 1, 7, 7)
+            # r = r.view(r.size(0), 1024, 1, 7, 7)
 
-            res = self.conv_fusion(r)
+            # res = self.conv_fusion(r)
             # spatial_res = self.spatial_stream.avgpool(spatial_conv13)
 
             # spatial_res = spatial_res.view(res.size(0), -1)
-            res = res.view(res.size(0), -1)
+            res = spatial_conv13.view(spatial_conv13.size(0), -1)
 
             # spatial_res = self.spatial_stream.classifier(spatial_res)
             res = self.fusion_classifier(res)
