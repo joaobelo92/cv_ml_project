@@ -68,8 +68,9 @@ class TwoStreamFusion(nn.Module):
 
             # perform spatial fusion of temporal and spatial features
             # r = torch.cat((spatial_conv13, temporal_conv13), dim=1)
-            for i in range(spatial_conv13.size(1)):
-                spatial_conv13[:, i, :, :] = spatial_conv13[:, i, :, :] + temporal_conv13[:, i, :, :]
+            res = torch.zeros(spatial_conv13.size()).cuda()
+            for i in range(res.size(1)):
+                res[:, i, :, :] = spatial_conv13[:, i, :, :] + temporal_conv13[:, i, :, :]
                 # r[:, 2 * i, :, :] = spatial_conv13[:, i, :, :]
                 # r[:, 2 * i + 1, :, :] = temporal_conv13[:, i, :, :]
 

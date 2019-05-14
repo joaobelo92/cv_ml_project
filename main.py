@@ -139,7 +139,6 @@ def main_worker(args):
         two_stream_fusion = TwoStreamFusion(101, model, args.arch)
         model = two_stream_fusion
 
-    print(model)
     model.cuda()
 
     # Scale learning rate based on global batch size

@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 
+
 class TemporalStream(nn.Module):
     def __init__(self, model, model_name, frames_temporal_flow=10, num_classes=None):
         super(TemporalStream, self).__init__()
@@ -37,7 +38,8 @@ class TemporalStream(nn.Module):
                 model.layer4
             )
             self.avgpool = model.avgpool
-            self.classifier = nn.Linear(512, num_classes)
+            if num_classes:
+                self.classifier = nn.Linear(512, num_classes)
         elif model_name == 'shufflenetv2_1' or model_name == 'shufflenetv2_2':
             out_channels = model.conv1.out_channels
             kernel_size = model.conv1.kernel_size
@@ -56,7 +58,8 @@ class TemporalStream(nn.Module):
                 model.conv5
             )
             self.avgpool = model.avg_pool
-            self.classifier = nn.Linear(model.out_channels[4], num_classes)
+            if num_classes:
+                self.classifier = nn.Linear(model.out_channels[4], num_classes)
 
         self.model_name = model_name
         self.num_classes = num_classes
