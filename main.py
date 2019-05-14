@@ -97,7 +97,8 @@ def main():
     if args.gpu is not None:
         warnings.warn('You have chosen a specific GPU. This will completely disable data parallelism')
 
-    print('\nCUDNN VERSION: {}\n'.format(torch.backends.cudnn.version()))
+    if args.local_rank == 0:
+        print('\nCUDNN VERSION: {}\n'.format(torch.backends.cudnn.version()))
 
     main_worker(args)
 
@@ -125,10 +126,12 @@ def main_worker(args):
 
     model_zoo = models if args.arch in models.__dict__ else torchvision_models
     if args.pretrained:
-        print("=> using pre-trained model '{}'".format(args.arch))
+        if args.local_rank == 0:
+            print("=> using pre-trained model '{}'".format(args.arch))
         model = model_zoo.__dict__[args.arch](pretrained=True)
     else:
-        print("=> creating model '{}'".format(args.arch))
+        if args.local_rank == 0:
+            print("=> creating model '{}'".format(args.arch))
         model = model_zoo.__dict__[args.arch]()
 
     if args.mode == 'spatial':
@@ -283,9 +286,9 @@ def train(train_loader, model, criterion, optimizer, epoch, args):
         acc1, acc5 = accuracy(output.data, target, topk=(1, 5))
 
         if args.distributed:
-            reduced_loss = reduce_tensor(loss.data)
-            acc1 = reduce_tensor(acc1)
-            acc5 = reduce_tensor(acc5)
+            reduced_loss = reduce_tensor(loss.data, args)
+            acc1 = reduce_tensor(acc1, args)
+            acc5 = reduce_tensor(acc5, args)
         else:
             reduced_loss = loss.data
 
@@ -298,7 +301,7 @@ def train(train_loader, model, criterion, optimizer, epoch, args):
         batch_time.update(time.time() - end)
         end = time.time()
 
-        if i % args.print_freq == 0:
+        if i % args.print_freq == 0 and args.local_rank == 0:
             progress.print(i)
 
 
@@ -335,9 +338,9 @@ def validate(val_loader, model, criterion, args):
             acc1, acc5 = accuracy(output.data, target, topk=(1, 5))
 
             if args.distributed:
-                reduced_loss = reduce_tensor(loss.data)
-                acc1 = reduce_tensor(acc1)
-                acc5 = reduce_tensor(acc5)
+                reduced_loss = reduce_tensor(loss.data, args)
+                acc1 = reduce_tensor(acc1, args)
+                acc5 = reduce_tensor(acc5, args)
             else:
                 reduced_loss = loss.data
 
@@ -349,16 +352,17 @@ def validate(val_loader, model, criterion, args):
             batch_time.update(time.time() - end)
             end = time.time()
 
-            if i % args.print_freq == 0:
+            if i % args.print_freq == 0 and args.local_rank == 0:
                 progress.print(i)
 
     return top1.avg
 
 
-def save_checkpoint(state, is_best, filename='checkpoint.pth.tar'):
+def save_checkpoint(state, is_best, arch):
+    filename = 'checkpoint_{}.pth.tar'.format(arch)
     torch.save(state, filename)
     if is_best:
-        shutil.copyfile(filename, 'model_best.pth.tar')
+        shutil.copyfile(filename, 'model_best_{}.pth.tar'.format(arch))
 
 
 class AverageMeter(object):
@@ -435,7 +439,7 @@ def accuracy(output, target, topk=(1,)):
 
 def reduce_tensor(tensor, args):
     rt = tensor.clone()
-    dist.all_reduce(rt, op=dist.reduce_op.SUM)
+    dist.all_reduce(rt, op=dist.ReduceOp.SUM)
     rt /= args.world_size
     return rt
 
