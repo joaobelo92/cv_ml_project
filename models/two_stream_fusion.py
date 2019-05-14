@@ -47,8 +47,11 @@ class TwoStreamFusion(nn.Module):
         # TODO: add possibility to use pretrained weigths
         self.temporal_stream = TemporalStream(model, model_name, frames_temporal_flow=10)
         self.spatial_stream = SpatialStream(spatial_model, model_name)
-        # TODO: test other fusion techniques
-        self.conv_fusion = nn.Conv3d(1024, 512, kernel_size=1, stride=1, bias=True)
+        self.conv_fusion = nn.Sequential(
+            nn.Conv3d(1024, 512, kernel_size=1, stride=1, bias=True),
+            nn.ReLU(True),
+            nn.MaxPool3d(2, stride=2)
+        )
         self.avgpool = model.avgpool
 
         self.fusion_classifier = model.classifier
@@ -85,11 +88,16 @@ class TwoStreamFusion(nn.Module):
 
             res = res.view(r.size(0), 512, 7, 7)
 
+            spatial_res = self.spatial_stream.avgpool(spatial_conv13)
             res = self.avgpool(res)
 
+            spatial_res = spatial_res.view(res.size(0), -1)
             res = res.view(res.size(0), -1)
+
+            spatial_res = self.spatial_stream.classifier(spatial_res)
             res = self.fusion_classifier(res)
-            res_mean += res / temporal_chunks
+
+            res_mean += (res + spatial_res) / temporal_chunks
 
         return res_mean
 
