@@ -1,4 +1,5 @@
 import argparse
+import math
 import shutil
 import time
 import warnings
@@ -8,7 +9,8 @@ import torch
 import torch.nn as nn
 import torch.backends.cudnn as cudnn
 import torch.utils.data
-import torchvision.transforms as transforms
+import torch.distributed as dist
+import torch.utils.data
 import torchvision.models as torchvision_models
 
 import models
@@ -17,9 +19,18 @@ from models.spatial_stream import SpatialStream
 from models.temporal_stream import TemporalStream
 from models.two_stream_fusion import TwoStreamFusion
 
+try:
+    from apex.parallel import DistributedDataParallel as DDP
+    from apex.fp16_utils import *
+    from apex import amp, optimizers
+    from apex.multi_tensor_apply import multi_tensor_applier
+except ImportError:
+    raise ImportError("Please install apex from https://www.github.com/nvidia/apex to run this example.")
+
 """
 Based on:
 https://github.com/pytorch/examples/blob/master/imagenet/main.py
+https://github.com/NVIDIA/apex/blob/master/examples/imagenet/main_amp.py
 """
 
 
@@ -29,12 +40,6 @@ def get_model_names(models):
 
 
 model_names = sorted(get_model_names(models) + get_model_names(torchvision_models))
-import torch
-import torch.nn as nn
-import torch.backends.cudnn as cudnn
-import torch.utils.data
-import torchvision.transforms as transforms
-import torchvision.models as torchvision_models
 
 train_modes = ['spatio_temporal', 'spatial', 'temporal']
 
@@ -67,11 +72,17 @@ parser.add_argument('--resume', default='', type=str, metavar='PATH',
 parser.add_argument('-e', '--evaluate', action='store_true',
                     help='evaluate model on validation set')
 parser.add_argument('--pretrained', dest='pretrained', action='store_true',
-                    help='use pre-trained model')
+                    help='use pre-trained model', default=True)
 parser.add_argument('--gpu', default=None, type=int,
                     help='GPU id to use.')
 parser.add_argument('--mode', default='spatio_temporal', type=str,
                     help='Train two-stream network fusion or only one stream.')
+
+parser.add_argument("--local_rank", default=0, type=int)
+
+parser.add_argument('--opt-level', default='O1', type=str)
+parser.add_argument('--keep-batchnorm-fp32', type=str, default=None)
+parser.add_argument('--loss-scale', type=str, default=None)
 
 best_acc1 = 0
 
@@ -79,8 +90,14 @@ best_acc1 = 0
 def main():
     args = parser.parse_args()
 
+    # benchmark mode will look for the optimal set of algorithms for a particular configuration
+    # it might lead to faster runtime unless the input size changes at each iteration
+    cudnn.benchmark = True
+
     if args.gpu is not None:
         warnings.warn('You have chosen a specific GPU. This will completely disable data parallelism')
+
+    print('\nCUDNN VERSION: {}\n'.format(torch.backends.cudnn.version()))
 
     main_worker(args)
 
@@ -88,8 +105,23 @@ def main():
 def main_worker(args):
     global best_acc1
 
-    if args.gpu is not None:
-        print("User GPU: {} for training".format(args.gpu))
+    args.distributed = False
+    if 'WORLD_SIZE' in os.environ:
+        args.distributed = int(os.environ['WORLD_SIZE']) > 1
+
+    # if args.gpu is not None:
+    #     print("User GPU: {} for training".format(args.gpu))
+    args.gpu = 0
+    args.world_size = 1
+
+    if args.distributed:
+        args.gpu = args.local_rank
+        torch.cuda.set_device(args.gpu)
+        torch.distributed.init_process_group(backend='nccl',
+                                             init_method='env://')
+        args.world_size = torch.distributed.get_world_size()
+
+    assert torch.backends.cudnn.enabled, "Amp requires cudnn backend to be enabled."
 
     model_zoo = models if args.arch in models.__dict__ else torchvision_models
     if args.pretrained:
@@ -109,79 +141,89 @@ def main_worker(args):
         two_stream_fusion = TwoStreamFusion(101, model, args.arch)
         model = two_stream_fusion
 
-    if args.gpu is not None:
-        torch.cuda.set_device(args.gpu)
-        model = model.cuda(args.gpu)
-    else:
-        # DataParallel will divide and allocate batch_size to all available GPUs
-        if args.arch.startswith('alexnet') or args.arch.startswith('vgg'):
-            model.features = torch.nn.DataParallel(model.features)
-            model.cuda()
-        else:
-            model = torch.nn.DataParallel(model).cuda()
+    model.cuda()
+
+    # Scale learning rate based on global batch size
+    args.lr = args.lr * float(args.batch_size * args.world_size) / 256.
+
+    # if args.gpu is not None:
+    #     torch.cuda.set_device(args.gpu)
+    #     model = model.cuda(args.gpu)
+    # else:
+    #     # DataParallel will divide and allocate batch_size to all available GPUs
+    #     if args.arch.startswith('alexnet') or args.arch.startswith('vgg'):
+    #         model.features = torch.nn.DataParallel(model.features)
+    #         model.cuda()
+    #     else:
+    #         model = torch.nn.DataParallel(model).cuda()
+
+    optimizer = torch.optim.SGD(model.parameters(), args.lr,
+                                momentum=args.momentum,
+                                weight_decay=args.weight_decay)
+
+    # Initialize Amp.  Amp accepts either values or strings for the optional override arguments,
+    # for convenient inter-operation with argparse.
+    model, optimizer = amp.initialize(model, optimizer,
+                                      opt_level=args.opt_level,
+                                      keep_batchnorm_fp32=args.keep_batchnorm_fp32,
+                                      loss_scale=args.loss_scale
+                                      )
+
+    if args.distributed:
+        model = DDP(model, delay_allreduce=True)
 
     criterion = nn.CrossEntropyLoss().cuda(args.gpu)
 
-    optimizer = torch.optim.SGD(model.parameters(), args.lr, momentum=args.momentum,
-                                weight_decay=args.weight_decay)
-
-    # optionally resume from a checkpoint
+    # Optionally resume from a checkpoint
     if args.resume:
-        if os.path.isfile(args.resume):
-            print("=> loading checkpoint '{}'".format(args.resume))
-            checkpoint = torch.load(args.resume)
-            args.start_epoch = checkpoint['epoch']
-            best_acc1 = checkpoint['best_acc1']
-            if args.gpu is not None:
-                # best_acc1 may be from a checkpoint from a different GPU
-                best_acc1 = best_acc1.to(args.cpu)
-            model.load_state_dict(checkpoint['state_dict'])
-            optimizer.load_state_dict(checkpoint['optimizer'])
-            print("=> loaded checkpoint '{}' (epoch {})".format(args.resume, checkpoint['epoch']))
-        else:
-            print("=> no checkpoint found at '{}'".format(args.resume))
+        # Use a local scope to avoid dangling references
+        def resume():
+            if os.path.isfile(args.resume):
+                print("=> loading checkpoint '{}'".format(args.resume))
+                checkpoint = torch.load(args.resume, map_location = lambda storage, loc: storage.cuda(args.gpu))
+                args.start_epoch = checkpoint['epoch']
+                best_prec1 = checkpoint['best_prec1']
+                model.load_state_dict(checkpoint['state_dict'])
+                optimizer.load_state_dict(checkpoint['optimizer'])
+                print("=> loaded checkpoint '{}' (epoch {})"
+                      .format(args.resume, checkpoint['epoch']))
+            else:
+                print("=> no checkpoint found at '{}'".format(args.resume))
+        resume()
 
-    # benchmark mode will look for the optimal set of algorithms for a particular configuration
-    # it might lead to faster runtime unless the input size changes at each iteration
-    cudnn.benchmark = True
+    train_dataset = SpatioTemporalDataset(args.data, 'trainlist{}.csv'.format(args.data_split))
 
-    normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                                     std=[0.229, 0.224, 0.225])
+    val_dataset = SpatioTemporalDataset(args.data, 'vallist{}.csv'.format(args.data_split))
 
-    if args.arch == 'inception_v3':
-        crop_size = 299
-        val_size = 320
-    else:
-        crop_size = 224
-        val_size = 256
+    train_sampler = None
+    val_sampler = None
+    if args.distributed:
+        train_sampler = torch.utils.data.distributed.DistributedSampler(train_dataset)
+        val_sampler = torch.utils.data.distributed.DistributedSampler(val_dataset)
 
-    spatio_temporal_train_dataset = SpatioTemporalDataset(args.data, 'trainlist{}.csv'.format(args.data_split))
+    train_loader = torch.utils.data.DataLoader(
+        train_dataset, batch_size=args.batch_size, shuffle=(train_sampler is None),
+        num_workers=args.workers, pin_memory=True, sampler=train_sampler
+    )
 
-    spatio_temporal_val_dataset = SpatioTemporalDataset(args.data, 'vallist{}.csv'.format(args.data_split))
-
-    spatio_temporal_train_loader = torch.utils.data.DataLoader(spatio_temporal_train_dataset,
-                                                               batch_size=args.batch_size,
-                                                               shuffle=True,
-                                                               num_workers=args.workers)
-
-    spatio_temporal_val_loader = torch.utils.data.DataLoader(spatio_temporal_val_dataset,
-                                                             batch_size=args.batch_size,
-                                                             shuffle=False,
-                                                             num_workers=args.workers)
+    val_loader = torch.utils.data.DataLoader(
+        val_dataset, batch_size=args.batch_size, shuffle=False,
+        num_workers=args.workers, pin_memory=True, sampler=val_sampler)
 
     if args.evaluate:
-        validate(spatio_temporal_val_loader, model, criterion, args)
+        validate(val_loader, model, criterion, args)
         return
 
     for epoch in range(args.start_epoch, args.epochs):
-        adjust_learning_rate(optimizer, epoch, args)
+        if args.distributed:
+            train_sampler.set_epoch(epoch)
 
         # train for one epoch
         # train(spatial_train_loader, model, criterion, optimizer, epoch, args)
-        train(spatio_temporal_train_loader, model, criterion, optimizer, epoch, args)
+        train(train_loader, model, criterion, optimizer, epoch, args)
 
         # evaluate on validation set
-        acc1 = validate(spatio_temporal_val_loader, model, criterion, args)
+        acc1 = validate(val_loader, model, criterion, args)
 
         # remember best acc@1 and save checkpoint
         is_best = acc1 > best_acc1
@@ -213,33 +255,45 @@ def train(train_loader, model, criterion, optimizer, epoch, args):
         # measure data loading time
         data_time.update(time.time() - end)
 
+        adjust_learning_rate(optimizer, epoch, i, len(train_loader), args)
+
         if args.gpu is not None and (args.mode == 'spatial' or args.mode == 'spatio_temporal'):
-            spatial = spatial.cuda(args.gpu, non_blocking=True)
+            spatial = spatial.cuda(non_blocking=True)
         if args.gpu is not None and (args.mode == 'temporal' or args.mode == 'spatio_temporal'):
-            temporal = temporal.cuda(args.gpu, non_blocking=True)
-        target = target.cuda(args.gpu)
+            temporal = temporal.cuda(non_blocking=True)
+        target = target.cuda()
 
         # compute output
         if args.mode == 'spatial':
             output, _ = model(spatial)
         elif args.mode == 'temporal':
             output, _ = model(temporal)
-        elif args.mode == 'spatio_temporal':
+        else:
             output = model(spatial, temporal)
 
         loss = criterion(output, target)
 
-        # measure accuracy and record loss
-        acc1, acc5 = accuracy(output, target, topk=(1, 5))
-        losses.update(loss.item(), spatial.size(0))
-        top1.update(acc1[0], spatial.size(0))
-        top5.update(acc5[0], spatial.size(0))
-
         # compute gradient and do SGD step
         optimizer.zero_grad()
-        loss.backward()
+        with amp.scale_loss(loss, optimizer) as scaled_loss:
+            scaled_loss.backward()
         optimizer.step()
 
+        # measure accuracy and record loss
+        acc1, acc5 = accuracy(output.data, target, topk=(1, 5))
+
+        if args.distributed:
+            reduced_loss = reduce_tensor(loss.data)
+            acc1 = reduce_tensor(acc1)
+            acc5 = reduce_tensor(acc5)
+        else:
+            reduced_loss = loss.data
+
+        losses.update(to_python_float(reduced_loss), spatial.size(0))
+        top1.update(to_python_float(acc1), spatial.size(0))
+        top5.update(to_python_float(acc5), spatial.size(0))
+
+        torch.cuda.synchronize()
         # measure elapsed time
         batch_time.update(time.time() - end)
         end = time.time()
@@ -262,26 +316,34 @@ def validate(val_loader, model, criterion, args):
         end = time.time()
         for i, (spatial, temporal, target) in enumerate(val_loader):
             if args.gpu is not None and (args.mode == 'spatial' or args.mode == 'spatio_temporal'):
-                spatial = spatial.cuda(args.gpu, non_blocking=True)
+                spatial = spatial.cuda(non_blocking=True)
             if args.gpu is not None and (args.mode == 'temporal' or args.mode == 'spatio_temporal'):
-                temporal = temporal.cuda(args.gpu, non_blocking=True)
-            target = target.cuda(args.gpu, non_blocking=True)
+                temporal = temporal.cuda(non_blocking=True)
+            target = target.cuda(non_blocking=True)
 
             # compute output
             if args.mode == 'spatial':
                 output, _ = model(spatial)
             elif args.mode == 'temporal':
                 output, _ = model(temporal)
-            elif args.mode == 'spatio_temporal':
+            else:
                 output = model(spatial, temporal)
 
             loss = criterion(output, target)
 
             # measure accuracy and record loss
-            acc1, acc5 = accuracy(output, target, topk=(1, 5))
-            losses.update(loss.item(), spatial.size(0))
-            top1.update(acc1[0], spatial.size(0))
-            top5.update(acc5[0], spatial.size(0))
+            acc1, acc5 = accuracy(output.data, target, topk=(1, 5))
+
+            if args.distributed:
+                reduced_loss = reduce_tensor(loss.data)
+                acc1 = reduce_tensor(acc1)
+                acc5 = reduce_tensor(acc5)
+            else:
+                reduced_loss = loss.data
+
+            losses.update(to_python_float(reduced_loss), spatial.size(0))
+            top1.update(to_python_float(acc1), spatial.size(0))
+            top5.update(to_python_float(acc5), spatial.size(0))
 
             # measure elapsed time
             batch_time.update(time.time() - end)
@@ -340,10 +402,16 @@ class ProgressMeter(object):
         return "[" + fmt + "/" + fmt.format(num_batches) + "]"
 
 
-# TODO: consider using LR scheduler instead
-def adjust_learning_rate(optimizer, epoch, args):
+def adjust_learning_rate(optimizer, epoch, step, len_epoch, args):
     """Sets the learning rate to the initial LR decayed by 10 every 30 epochs"""
-    lr = args.lr * (0.1 ** (epoch // 30))
+    # if epoch < 5:
+    #     lr = args.lr * float(1 + step + epoch * len_epoch) / (5. * len_epoch)
+    # else:
+    number_batches = args.epochs * len_epoch
+    # current_batch = (epoch - 5) * len_epoch + step
+    current_batch = epoch * len_epoch + step
+    lr = 0.5 * (1 + math.cos(current_batch * math.pi / number_batches)) * args.lr
+
     for param_group in optimizer.param_groups:
         param_group['lr'] = lr
 
@@ -363,6 +431,13 @@ def accuracy(output, target, topk=(1,)):
             correct_k = correct[:k].view(-1).float().sum(0, keepdim=True)
             res.append(correct_k.mul_(100.0 / batch_size))
         return res
+
+
+def reduce_tensor(tensor, args):
+    rt = tensor.clone()
+    dist.all_reduce(rt, op=dist.reduce_op.SUM)
+    rt /= args.world_size
+    return rt
 
 
 if __name__ == '__main__':
