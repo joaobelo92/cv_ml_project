@@ -159,8 +159,8 @@ class ShuffleNetV2(nn.Module):
                     nn.init.constant_(m.bias, 0)
 
 
-def shufflenetv2_1(pretrained=False, **kwargs):
+def shufflenetv2_x1_0(pretrained=False, **kwargs):
     return ShuffleNetV2(**kwargs)
 
-def shufflenetv2_2(pretrained=False, **kwargs):
+def shufflenetv2_x2_0(pretrained=False, **kwargs):
     return ShuffleNetV2(complexity='2.0')

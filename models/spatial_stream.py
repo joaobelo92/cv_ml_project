@@ -24,7 +24,7 @@ class SpatialStream(nn.Module):
             )
             self.avgpool = model.avgpool
             self.classifier = nn.Linear(512, num_classes)
-        elif model_name == 'shufflenetv2_1' or model_name == 'shufflenetv2_2':
+        elif model_name == 'shufflenetv2_x2_0':
             self.features = nn.Sequential(
                 model.conv1,
                 model.bn1,

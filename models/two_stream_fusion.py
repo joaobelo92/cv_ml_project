@@ -42,8 +42,10 @@ class TwoStreamFusion(nn.Module):
         #     nn.MaxPool3d(2, stride=2)
         # )
 
+        num_features = 100352 if model_name == 'shufflenetv2_x2_0' else 25088
+
         self.fusion_classifier = nn.Sequential(
-            nn.Linear(25088, 2048), nn.ReLU(), nn.Dropout(p=0.85),
+            nn.Linear(num_features, 2048), nn.ReLU(), nn.Dropout(p=0.85),
             nn.Linear(2048, 512), nn.ReLU(), nn.Dropout(p=0.85),
             nn.Linear(512, num_classes))
 
@@ -57,7 +59,7 @@ class TwoStreamFusion(nn.Module):
         in a final prediction
         """
         res_mean = torch.zeros(temporal.size(0), self.num_classes).cuda()
-        temporal_chunks = spatial.size(1) // 3
+        temporal_chunks = (spatial.size(1) // 3)
         for t in range(temporal_chunks):
             spatial_index = t * 3
             temporal_index = t * self.frames_temporal_flow * 2

@@ -40,7 +40,7 @@ class TemporalStream(nn.Module):
             self.avgpool = model.avgpool
             if num_classes:
                 self.classifier = nn.Linear(512, num_classes)
-        elif model_name == 'shufflenetv2_1' or model_name == 'shufflenetv2_2':
+        elif model_name == 'shufflenetv2_x2_0':
             out_channels = model.conv1.out_channels
             kernel_size = model.conv1.kernel_size
             stride = model.conv1.stride
