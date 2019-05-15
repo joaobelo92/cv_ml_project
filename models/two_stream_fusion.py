@@ -4,6 +4,8 @@ import copy
 
 import torchvision.models as torchvision_models
 
+torchvision_models.resnet18()
+
 from models.spatial_stream import SpatialStream
 from models.temporal_stream import TemporalStream
 
@@ -44,10 +46,12 @@ class TwoStreamFusion(nn.Module):
 
         num_features = 100352 if model_name == 'shufflenetv2_x2_0' else 25088
 
-        self.fusion_classifier = nn.Sequential(
-            nn.Linear(num_features, 2048), nn.ReLU(), nn.Dropout(p=0.85),
-            nn.Linear(2048, 512), nn.ReLU(), nn.Dropout(p=0.85),
-            nn.Linear(512, num_classes))
+        # self.classifier = nn.Sequential(
+        #     nn.Linear(num_features, 2048), nn.ReLU(), nn.Dropout(p=0.85),
+        #     nn.Linear(2048, 512), nn.ReLU(), nn.Dropout(p=0.85),
+        #     nn.Linear(512, num_classes))
+
+        self.classifier = nn.Linear(num_features, num_classes)
 
         self.num_classes = num_classes
         self.frames_temporal_flow = frames_temporal_flow
@@ -85,7 +89,7 @@ class TwoStreamFusion(nn.Module):
             res = spatial_conv13.view(spatial_conv13.size(0), -1)
 
             # spatial_res = self.spatial_stream.classifier(spatial_res)
-            res = self.fusion_classifier(res)
+            res = self.classifier(res)
 
             res_mean += res / temporal_chunks
 
